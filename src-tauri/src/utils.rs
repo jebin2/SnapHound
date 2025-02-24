@@ -40,7 +40,7 @@ pub async fn list_files(app: AppHandle) {
                 if recursive {
                     path_str = &path_str[..path_str.len() - 2];
                 }
-
+    
                 let expanded_path = if path_str.starts_with("~/") {
                     dirs::home_dir()
                         .map(|home| home.join(&path_str[2..]))
@@ -48,8 +48,18 @@ pub async fn list_files(app: AppHandle) {
                 } else {
                     PathBuf::from(path_str)
                 };
-
-                directories.push(expanded_path);
+    
+                if recursive {
+                    if let Ok(entries) = fs::read_dir(&expanded_path) {
+                        for entry in entries.flatten() {
+                            if entry.path().is_dir() {
+                                directories.push(entry.path());
+                            }
+                        }
+                    }
+                } else {
+                    directories.push(expanded_path);
+                }
             }
         }
     }
@@ -74,7 +84,7 @@ pub async fn list_files(app: AppHandle) {
 
             // Process files in parallel and send in chunks of 100
             file_paths
-                .par_chunks(2) // Process in parallel in chunks of 100
+                .par_chunks(1) // Process in parallel in chunks of 100
                 .for_each(|chunk| {
                     let files: Vec<_> = chunk
                         .par_iter()

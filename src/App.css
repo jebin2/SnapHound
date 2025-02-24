@@ -1,0 +1,269 @@
+:root {
+	--bg: #000000;
+	--text: #ffffff;
+	--accent: #1a1a1a;
+	--highlight: #4d4d4d;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+	background: var(--bg);
+	color: var(--text);
+	min-height: 100vh;
+}
+
+.container {
+	max-width: 90vw;
+	margin: 0 auto;
+	padding: 2rem;
+}
+
+/* Search Header */
+.search-header {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 1rem;
+	margin-bottom: 2rem;
+	position: sticky;
+	top: 0;
+	background: var(--bg);
+	padding: 2rem 0;
+	z-index: 100;
+}
+
+.search-box {
+	display: flex;
+	align-items: center;
+	background: var(--accent);
+	border-radius: 50px;
+	padding: 0 1.5rem;
+}
+
+.search-input {
+	flex: 1;
+	background: transparent;
+	border: none;
+	color: var(--text);
+	padding: 1.2rem;
+	font-size: 1.1rem;
+}
+
+.search-type {
+	display: flex;
+	gap: 1rem;
+	align-items: center;
+}
+
+.search-type-btn {
+	background: var(--accent);
+	border: none;
+	color: var(--text);
+	padding: 0.8rem 1.5rem;
+	border-radius: 30px;
+	cursor: pointer;
+	transition: 0.3s;
+}
+
+.search-type-btn.active {
+	background: var(--text);
+	color: var(--bg);
+}
+
+/* Progress Indicator */
+.progress-bar {
+	height: 3px;
+	background: var(--highlight);
+	margin-top: 1rem;
+	position: relative;
+}
+
+.progress-fill {
+	height: 100%;
+	background: var(--text);
+	width: 0%;
+	transition: width 0.3s ease;
+}
+
+/* Media Grid */
+.media-grid {
+	width: 100%;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 16px;
+	padding: 16px;
+	position: relative;
+}
+
+.media-item {
+	position: relative;
+	aspect-ratio: 1;
+	background: var(--accent);
+	border-radius: 10px;
+	overflow: hidden;
+	transition: 0.3s;
+	width: 200px;
+	height: 200px;
+	border: 1px solid white;
+	/* For visualization */
+	overflow: hidden;
+	/* Important to clip any overflow if object-fit fails */
+}
+
+.media-item:hover {
+	transform: translateY(-5px);
+}
+
+/* Video Search Modal */
+.modal {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.8);
+	justify-content: center;
+	align-items: center;
+	z-index: 1000;
+}
+
+.modal-content {
+	background: #111;
+	padding: 2rem;
+	border-radius: 12px;
+	width: 600px;
+	max-width: 90vw;
+	border: 1px solid #333;
+}
+
+.upload_icon,
+.setting_icon {
+	filter: invert(100%)
+}
+
+.path-list {
+	margin: 1.5rem 0;
+	max-height: 50vh;
+	overflow-y: auto;
+}
+
+.path-item {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	padding: 0.75rem;
+	background: #000;
+	border: 1px solid #333;
+	border-radius: 8px;
+	margin-bottom: 0.5rem;
+}
+
+.path-input {
+	flex-grow: 1;
+	background: transparent;
+	border: none;
+	color: #fff;
+	padding: 0.5rem;
+	font-family: monospace;
+}
+
+.path-input:focus {
+	outline: none;
+	background: rgba(255, 255, 255, 0.05);
+}
+
+.remove-path {
+	background: none;
+	border: none;
+	color: #ff5555;
+	cursor: pointer;
+	padding: 0.5rem;
+	border-radius: 4px;
+}
+
+.remove-path:hover {
+	background: rgba(255, 85, 85, 0.1);
+}
+
+.modal-actions {
+	display: flex;
+	gap: 1rem;
+	justify-content: flex-end;
+	margin-top: 1.5rem;
+}
+
+.search-type-btn {
+	padding: 0.75rem 1.5rem;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	background: #222;
+	border: 1px solid #333;
+	color: #fff;
+}
+
+.search-type-btn:hover {
+	background: #fff;
+	color: #000;
+	border-color: #fff;
+}
+
+.add-path-btn {
+	width: 100%;
+	padding: 1rem;
+	background: #222;
+	border: 1px solid #333;
+	color: #fff;
+	border-radius: 8px;
+	cursor: pointer;
+	margin-top: 1rem;
+}
+
+.add-path-btn:hover {
+	background: #333;
+}
+
+.media-item img {
+	width: 100%;
+	/* Important, to let object-fit work. You can use height: auto or set a height, depending on your case */
+	height: 100%;
+	/* important, to let object-fit work */
+	object-fit: contain;
+	/*  Scales the image to fit, preserving aspect ratio */
+	/* contain: strict; */
+	will-change: transform;
+}
+
+.media-container {
+    height: calc(100vh - 150px - 2rem - 4rem);
+    overflow-y: auto;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Adjust spacing between items */
+    padding: 10px;
+	justify-content: center;
+}
+
+.menu-item {
+    width: 200px;
+    height: 200px;
+    background-color: lightgray; /* Placeholder */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.media-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Adapts to available space */
+    gap: 16px;
+    padding: 16px;
+    justify-items: center; /* Aligns content to the left */
+}

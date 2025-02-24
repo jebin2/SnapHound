@@ -1,7 +1,8 @@
-# Tauri + Vanilla
+# React + Vite
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Recommended IDE Setup
+Currently, two official plugins are available:
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh

@@ -3,6 +3,7 @@
 		"~/Downloads/*",
 		"~/Videos/*",
 		"~/Pictures/*",
-		"~/Documents/*"
+		"~/Documents/*",
+		"~/*"
 	]
 }

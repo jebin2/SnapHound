@@ -4,6 +4,7 @@
 	"version": "0.1.0",
 	"identifier": "com.snaphound.app",
 	"build": {
+		"devUrl": "http://localhost:5173",
 		"beforeBuildCommand": "node build_setup.js",
 		"frontendDist": "../src"
 	},
