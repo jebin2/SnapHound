@@ -3,6 +3,7 @@
 
 mod utils;
 mod initialise;
+mod image_processor;
 
 #[tokio::main]
 async fn main() {

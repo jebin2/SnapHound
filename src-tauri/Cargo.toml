@@ -29,3 +29,13 @@ futures = "0.3.31"
 walkdir = "2.3"
 dirs = "4.0"
 uuid = { version = "1.8", features = ["v4"] }
+imageproc = "0.23.0"
+mozjpeg = "0.10"
+
+image = { version = "0.24", features = ["webp", "jpeg"] }
+
+webp = "0.2"
+rayon = "1.8"
+num_cpus = "1.15"
+fast_image_resize = "2.7"  # Faster alternative to image::imageops
+rgb = "0.8"  # For faster color conversions

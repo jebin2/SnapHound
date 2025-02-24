@@ -5,9 +5,11 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tauri::{AppHandle, Emitter, Manager};
 use uuid::Uuid;
+use rayon::prelude::*;
 use walkdir::WalkDir;
 
 use crate::initialise::fetch_config;
+use crate::image_processor::process_thumbnail;
 
 pub fn send_to_frontend(app_handle: &AppHandle, message: String, event_type: &str) {
     app_handle.emit(event_type, message).unwrap();
@@ -28,11 +30,12 @@ pub async fn list_files(app: AppHandle) {
     println!("Fetching config...");
     let config = fetch_config().await.unwrap();
     println!("Config fetched: {:?}", config);
+    
+    let mut directories = Vec::new();
 
     if let Some(paths) = config["priority_path"].as_array() {
         for path_value in paths {
             if let Some(mut path_str) = path_value.as_str() {
-                // Handle recursive flag and strip /*
                 let recursive = path_str.ends_with("/*");
                 if recursive {
                     path_str = &path_str[..path_str.len() - 2];
@@ -46,34 +49,56 @@ pub async fn list_files(app: AppHandle) {
                     PathBuf::from(path_str)
                 };
 
-                println!("Processing path: {:?}", expanded_path);
-
-                if expanded_path.is_dir() {
-                    let walker = WalkDir::new(&expanded_path)
-                        .max_depth(if recursive { usize::MAX } else { 1 })
-                        .into_iter()
-                        .filter_map(|e| e.ok());
-
-                    for entry in walker {
-                        let file_path = entry.path();
-                        if file_path.is_file() {
-                            let file_type = get_file_type(&file_path);
-                            if file_type != "unknown" {
-                                let file_info = json!({
-                                    "id": Uuid::new_v4().to_string(), // Generate a unique ID
-                                    "path": file_path,
-                                    "type": file_type
-                                });
-                                // Send the JSON object directly instead of string
-                                send_to_frontend(&app, file_info.to_string(), "file_path");
-                            }
-                        }
-                    }
-                }
+                directories.push(expanded_path);
             }
         }
     }
-    send_to_frontend(&app, "file_path_end".to_string(), "file_path_end");
+
+    // Sort directories before processing
+    directories.sort();
+
+    for expanded_path in directories {
+        println!("Processing directory: {:?}", expanded_path);
+
+        if expanded_path.is_dir() {
+            let mut file_paths: Vec<_> = WalkDir::new(&expanded_path)
+                .max_depth(if config["recursive"].as_bool().unwrap_or(false) { usize::MAX } else { 1 })
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|entry| entry.path().is_file()) // Keep only files
+                .map(|entry| entry.path().to_path_buf()) // Extract file paths
+                .collect();
+
+            // Sort file paths before processing
+            file_paths.sort();
+
+            // Process files in parallel and send in chunks of 100
+            file_paths
+                .par_chunks(2) // Process in parallel in chunks of 100
+                .for_each(|chunk| {
+                    let files: Vec<_> = chunk
+                        .par_iter()
+                        .filter_map(|file_path| {
+                            let file_type = get_file_type(&file_path);
+                            if file_type != "unknown" {
+                                Some(json!({
+                                    "id": Uuid::new_v4().to_string(),
+                                    "path": process_thumbnail(file_path.to_str().unwrap()),
+                                    "type": file_type
+                                }))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+
+                    if !files.is_empty() {
+                        let json_data = serde_json::to_string(&files).unwrap();
+                        send_to_frontend(&app, json_data, "file_path");
+                    }
+                });
+        }
+    }
 }
 
 fn wsl_to_windows_path(path: String) -> String {

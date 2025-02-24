@@ -11,15 +11,17 @@ use crate::utils::send_to_frontend;
 const APP_TEMP_DIR: &str = "snaphound";
 const VENV_DIR: &str = "venv";
 const CONFIG_FILE: &str = "config.json";
+const THUMBNAIL_DIR: &str = "thumbnail";
 
-struct EnvPaths {
+pub struct EnvPaths {
     python_binary: PathBuf,
     config_path: PathBuf,
     temp_dir: PathBuf,
+    pub thumbnail_path: PathBuf,
 }
 
 impl EnvPaths {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let temp_dir = env::temp_dir().join(APP_TEMP_DIR);
         fs::create_dir_all(&temp_dir).expect("Failed to create application directory");
 
@@ -30,11 +32,14 @@ impl EnvPaths {
         };
 
         let config_path = temp_dir.join(CONFIG_FILE);
+        let thumbnail_path = temp_dir.join(THUMBNAIL_DIR);
+        fs::create_dir_all(&thumbnail_path).expect("Failed to create thumbnail directory");
 
         Self {
             python_binary,
             config_path,
             temp_dir,
+            thumbnail_path,
         }
     }
 }
