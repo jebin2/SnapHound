@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>SnapHound</title>
+	<link rel="stylesheet" href="styles.css">
+	<script defer src="main.js"></script>
+</head>
+
+<body>
+	<div class="container">
+		<!-- Search Header -->
+		<header class="search-header">
+			<div class="search-box">
+				<input type="text" class="search-input" placeholder="Search with text or image...">
+				<img id="upload_icon" class="upload_icon" src="assets/upload_icon.png" style="width: 40px;" />
+			</div>
+			<div class="search-type">
+				<button id="search-type-btn" class="search-type-btn active" data-type="image">Images</button>
+				<button class="search-type-btn" data-type="video">Videos</button>
+				<img id="setting_icon" class="setting_icon" src="assets/setting_icon.png" style="width: 40px;" data-type="settings"/>
+			</div>
+		</header>
+
+		<!-- Progress Indicator -->
+		<div class="progress-bar">
+			<div class="progress-fill"></div>
+		</div>
+
+		<!-- Media Grid -->
+		<main class="media-grid">
+			Loading...
+		</main>
+
+		<!-- Video Search Modal -->
+		<div class="modal" id="videoModal">
+			<div class="modal-content">
+				<h2>Video Search</h2>
+				<p>This may take some time. Select videos to analyze:</p>
+				<!-- Video list would go here -->
+				<button class="start-analysis">Start Analysis</button>
+			</div>
+		</div>
+		<!-- Settings Modal -->
+		<div class="modal" id="SettingsModal">
+			<div class="modal-content">
+				<h2>Manage Search Paths</h2>
+				<div class="path-list" id="pathList"></div>
+				
+				<button class="add-path-btn" id="addPathBtn">
+					＋ Add New Path
+				</button>
+		
+				<div class="modal-actions">
+					<button id="settingCancel" class="search-type-btn">Cancel</button>
+					<button id="settingSave" class="search-type-btn">Save Changes</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+
+</html>

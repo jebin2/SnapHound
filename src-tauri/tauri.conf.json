@@ -1,0 +1,53 @@
+{
+	"$schema": "https://schema.tauri.app/config/2",
+	"productName": "snaphound",
+	"version": "0.1.0",
+	"identifier": "com.snaphound.app",
+	"build": {
+		"beforeBuildCommand": "node build_setup.js",
+		"frontendDist": "../src"
+	},
+	"app": {
+		"withGlobalTauri": true,
+		"windows": [
+			{
+				"title": "SnapHound",
+				"width": 1280,
+				"height": 720,
+				"backgroundColor": "#000000",
+				"theme": "Dark",
+				"decorations": true,
+				"transparent": true,
+				"center": true
+			}
+		],
+		"security": {
+			"csp": "defaultSrc 'self' customprotocol: asset:; connectSrc ipc: http://ipc.localhost; fontSrc https://fonts.gstatic.com; imgSrc 'self' asset: http://asset.localhost blob: data:; styleSrc 'unsafe-inline' 'self' https://fonts.googleapis.com",
+			"assetProtocol": {
+				"enable": true,
+				"scope": [
+					"$HOME/**"
+				]
+			}
+		}
+	},
+	"bundle": {
+		"active": true,
+		"targets": "all",
+		"icon": [
+			"icons/32x32.png",
+			"icons/128x128.png",
+			"icons/128x128@2x.png",
+			"icons/icon.icns",
+			"icons/icon.ico"
+		],
+		"resources": [
+			"bin/dependency/**/*"
+		],
+		"windows": {
+			"webviewInstallMode": {
+				"type": "downloadBootstrapper"
+			}
+		}
+	}
+}

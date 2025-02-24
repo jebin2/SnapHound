@@ -1,0 +1,13 @@
+{
+  "name": "snaphound",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+		"postinstall": "node build_perm.js",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
