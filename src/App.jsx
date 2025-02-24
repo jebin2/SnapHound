@@ -28,7 +28,7 @@ const MediaItem = memo(({ item }) => {
     return () => currentRef && observer.unobserve(currentRef);
   }, []);
 
-  const imgSrc = isVisible ? convertFileSrc(item.path) : '';
+  const imgSrc = isVisible ? convertFileSrc(item.path) : null;
 
   if (item.id === "empty") {
     return <div className="media-item" ref={imgRef}>No media found</div>;
@@ -37,14 +37,14 @@ const MediaItem = memo(({ item }) => {
   return (
     <div className="media-item" ref={imgRef}>
       {item.type === "video" && <div className="video-indicator">▶</div>}
-      <img
+      {imgSrc && (<img
         id={item.id}
         src={imgSrc}
         alt={item.name}
         loading="lazy"
         style={{ width: "200px", height: "200px" }}
         onError={(e) => (e.target.style.display = "none")}
-      />
+      />)}
     </div>
   );
 }, (prev, next) => (
