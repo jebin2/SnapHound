@@ -12,7 +12,7 @@ async function invokeAPI(method, ...args) {
 }
 
 /** Event Listeners **/
-listen('file_path', (event) => populateMedia(JSON.parse(event.payload)));
+// listen('file_path', (event) => populateMedia(JSON.parse(event.payload)));
 listen('file_path_end', (event) => {
 	const grid = document.querySelector('.media-grid');
     if (grid.innerHTML.trim() === "Loading...") {
@@ -25,6 +25,7 @@ listen('can_fetch_list', () => invokeAPI("list_files"));
 const settingsModal = document.getElementById('SettingsModal');
 const videoModal = document.getElementById('videoModal');
 const mediaGrid = document.querySelector('.media-grid');
+const mediaContainer = document.querySelector('.media-container');
 const searchTypeButtons = document.querySelectorAll('.search-type-btn');
 const settingIcon = document.getElementById('setting_icon');
 const addPathBtn = document.getElementById('addPathBtn');
@@ -123,33 +124,34 @@ function updateProgress(percent) {
 /**
  * Populates media grid dynamically
  */
-function populateMedia(item) {
-    if (mediaGrid.innerHTML.trim() === "Loading...") {
-        mediaGrid.innerHTML = "";
-    }
-    const mediaItem = document.createElement('div');
-    mediaItem.classList.add('media-item');
-    const assetUrl = convertFileSrc(item.path);
-    
-    const img = document.createElement('img');
-    img.id = item.id;
-    img.src = assetUrl;
-    img.alt = item.name;
-    img.loading = "lazy";
-    img.onerror = () => {
-        console.error('Failed to load image:', item.path);
-        img.style.display = 'none';
-    };
-
-    if (item.type === 'video') {
-        const videoIndicator = document.createElement('div');
-        videoIndicator.classList.add('video-indicator');
-        videoIndicator.textContent = '▶';
-        mediaItem.appendChild(videoIndicator);
-    }
-    mediaItem.appendChild(img);
-    mediaGrid.appendChild(mediaItem);
-}
+// function populateMedia(item_arr) {
+//     if (document.querySelectorAll(".media-item").length < 50) {
+//         item_arr.forEach(item => {
+//             const mediaItem = document.createElement('div');
+//             mediaItem.classList.add('media-item');
+//             const assetUrl = convertFileSrc(item.path);
+            
+//             const img = document.createElement('img');
+//             img.id = item.id;
+//             img.src = assetUrl;
+//             img.alt = item.name;
+//             img.loading = "lazy";
+//             img.onerror = () => {
+//                 console.error('Failed to load image:', item.path);
+//                 img.style.display = 'none';
+//             };
+        
+//             if (item.type === 'video') {
+//                 const videoIndicator = document.createElement('div');
+//                 videoIndicator.classList.add('video-indicator');
+//                 videoIndicator.textContent = '▶';
+//                 mediaItem.appendChild(videoIndicator);
+//             }
+//             mediaItem.appendChild(img);
+//             mediaGrid.appendChild(mediaItem);
+//         });
+//     }
+// }
 
 /**
  * Initializes environment on page load
@@ -164,3 +166,52 @@ document.addEventListener('click', (event) => {
         videoModal.style.display = "none";
 	}
 });
+
+
+
+let allMediaItems = []; // Store all items received from backend
+
+/** Event Listeners **/
+listen('file_path', (event) => {
+    const newItems = JSON.parse(event.payload); // 10 items at a time
+    allMediaItems = allMediaItems.concat(newItems); // Accumulate items
+    populateMedia(newItems);
+});
+
+function populateMedia(item_arr) {
+    const existingItems = document.querySelectorAll('.media-item').length;
+
+    // if (existingItems < 500) {
+        item_arr.forEach(item => {
+            const mediaItem = createMediaElement(item);
+            mediaGrid.appendChild(mediaItem);
+        });
+    // }
+}
+
+function createMediaElement(item) {
+    const mediaItem = document.createElement('div');
+    mediaItem.classList.add('media-item');
+    const assetUrl = convertFileSrc(item.path);
+
+    const img = document.createElement('img');
+    img.id = item.id;
+    img.src = assetUrl;
+    img.alt = item.name;
+    img.loading = 'lazy';
+    img.style.width = '200px';
+    img.style.height = '200px';
+    img.onerror = () => {
+        console.error('Failed to load image:', item.path);
+        img.style.display = 'none';
+    };
+
+    if (item.type === 'video') {
+        const videoIndicator = document.createElement('div');
+        videoIndicator.classList.add('video-indicator');
+        videoIndicator.textContent = '▶';
+        mediaItem.appendChild(videoIndicator);
+    }
+    mediaItem.appendChild(img);
+    return mediaItem;
+}
