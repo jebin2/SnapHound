@@ -6,18 +6,20 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use serde_json::Value;
 
-use crate::utils::send_to_frontend;
+use crate::utils::{send_to_frontend, execute_command};
 
 const APP_TEMP_DIR: &str = "snaphound";
 const VENV_DIR: &str = "venv";
 const CONFIG_FILE: &str = "config.json";
 const THUMBNAIL_DIR: &str = "thumbnail";
+const SEARCH_PY: &str = "search.py";
 
 pub struct EnvPaths {
-    python_binary: PathBuf,
+    pub python_binary: PathBuf,
     config_path: PathBuf,
-    temp_dir: PathBuf,
+    pub temp_dir: PathBuf,
     pub thumbnail_path: PathBuf,
+    pub search_path: PathBuf,
 }
 
 impl EnvPaths {
@@ -32,6 +34,7 @@ impl EnvPaths {
         };
 
         let config_path = temp_dir.join(CONFIG_FILE);
+        let search_path = temp_dir.join(SEARCH_PY);
         let thumbnail_path = temp_dir.join(THUMBNAIL_DIR);
         fs::create_dir_all(&thumbnail_path).expect("Failed to create thumbnail directory");
 
@@ -40,6 +43,7 @@ impl EnvPaths {
             config_path,
             temp_dir,
             thumbnail_path,
+            search_path
         }
     }
 }
@@ -48,6 +52,7 @@ fn get_resource_path(app: &AppHandle, resource_type: &str) -> PathBuf {
     let resource_path = match resource_type {
         "venv" => "bin/dependency/venv",
         "config" => "bin/dependency/config.json",
+        "search" => "bin/dependency/search.py",
         _ => {
             send_to_frontend(app, format!("Unsupported resource type: {}", resource_type), "error");
             return PathBuf::new();
@@ -70,92 +75,131 @@ fn get_resource_path(app: &AppHandle, resource_type: &str) -> PathBuf {
     }
 }
 
-async fn setup_virtual_environment(app: &AppHandle, paths: &EnvPaths) {
+async fn setup_virtual_environment(app: &AppHandle, paths: &EnvPaths) -> Result<(), String> {
     if paths.python_binary.exists() {
-        send_to_frontend(app, format!("Virtual environment already exists at {:?}", paths.python_binary), "error");
-        return;
+        send_to_frontend(app, format!("Virtual environment already exists at {:?}", paths.python_binary), "info");
+        return Ok(());
     }
 
     let venv_source = get_resource_path(app, "venv");
     if venv_source.as_os_str().is_empty() {
-        return;
+        return Err("Failed to locate virtual environment resource".to_string());
     }
 
-    copy_resource(&app, &venv_source, &paths.temp_dir);
+    copy_resource(&app, &venv_source, &paths.temp_dir).await
 }
 
-fn install_dependencies(app: &AppHandle, paths: &EnvPaths) {
+async fn install_dependencies(app: &AppHandle, paths: &EnvPaths) -> Result<(), String> {
     if !paths.python_binary.exists() {
         send_to_frontend(app, format!("Python binary not found at {:?}", paths.python_binary), "error");
-        return;
+        return Err("Python binary not found".to_string());
     }
 
-    let mut child = Command::new(&paths.python_binary)
-        .args(&["-m", "pip", "install", "git+https://github.com/jebin2/SnapHoundPy.git"])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("Failed to start process");
+    let mut command = Command::new(&paths.python_binary);
+    command.args(&["-m", "pip", "install", "--force-reinstall", "git+https://github.com/jebin2/SnapHoundPy.git"]);
 
-	// Handle stdout
-    if let Some(stdout) = child.stdout.take() {
-        let reader = BufReader::new(stdout);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                println!("{}", line);
+    // Execute the command and wait for it to complete
+    match execute_command(app, &mut command, "install_dependencies".to_string()) {
+        Ok(mut child) => {
+            // Properly wait for the child process to complete
+            match child.wait() {
+                Ok(exit_status) if exit_status.success() => {
+                    send_to_frontend(app, "Dependencies installed successfully".to_string(), "success");
+                    Ok(())
+                }
+                Ok(exit_status) => {
+                    let error_msg = format!("Installation failed with status: {}", exit_status);
+                    send_to_frontend(app, error_msg.clone(), "error");
+                    Err(error_msg)
+                }
+                Err(e) => {
+                    let error_msg = format!("Failed to wait for installation process: {}", e);
+                    send_to_frontend(app, error_msg.clone(), "error");
+                    Err(error_msg)
+                }
             }
         }
-    }
-
-    // Handle stderr
-    if let Some(stderr) = child.stderr.take() {
-        let reader = BufReader::new(stderr);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                eprintln!("{}", line);
-            }
+        Err(e) => {
+            let error_msg = format!("Failed to start installation process: {}", e);
+            send_to_frontend(app, error_msg.clone(), "error");
+            Err(error_msg)
         }
-    }
-
-    // Wait for the process to complete
-    let _ = child.wait();
-
-    send_to_frontend(app, "Success.".to_string(), "success")
-}
-
-fn copy_resource(app: &AppHandle, source: &PathBuf, destination: &PathBuf) {
-    let result = Command::new("cp")
-        .args(&["-r", 
-            source.to_str().unwrap(), 
-            destination.to_str().unwrap()
-        ])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .output();
-
-    if let Err(e) = result {
-        send_to_frontend(app, format!("Failed to copy resource: {}", e), "error");
     }
 }
 
-async fn setup_config(app: &AppHandle, paths: &EnvPaths) {
+
+async fn copy_resource(app: &AppHandle, source: &PathBuf, destination: &PathBuf) -> Result<(), String> {
+    let mut command = Command::new("cp");
+    command.args(&["-r", source.to_str().unwrap(), destination.to_str().unwrap()]);
+
+    match execute_command(app, &mut command, "copy_resource".to_string()) {
+        Ok(mut child) => {
+            match child.wait() {
+                Ok(exit_status) if exit_status.success() => {
+                    send_to_frontend(app, "Copy completed successfully.".to_string(), "success");
+                    Ok(())
+                }
+                Ok(exit_status) => {
+                    let error_msg = format!("Copy failed with status: {}", exit_status);
+                    send_to_frontend(app, error_msg.clone(), "error");
+                    Err(error_msg)
+                }
+                Err(e) => {
+                    let error_msg = format!("Failed to wait for copy process: {}", e);
+                    send_to_frontend(app, error_msg.clone(), "error");
+                    Err(error_msg)
+                }
+            }
+        }
+        Err(e) => {
+            let error_msg = format!("Failed to start copy process: {}", e);
+            send_to_frontend(app, error_msg.clone(), "error");
+            Err(error_msg)
+        }
+    }
+}
+
+async fn setup_config(app: &AppHandle, paths: &EnvPaths) -> Result<(), String> {
     let config_source = get_resource_path(app, "config");
     if config_source.as_os_str().is_empty() {
-        return;
+        return Err("Failed to locate config resource".to_string());
     }
     
-    copy_resource(app, &config_source, &paths.config_path);
+    let search_path = get_resource_path(app, "search");
+    if search_path.as_os_str().is_empty() {
+        return Err("Failed to locate search script resource".to_string());
+    }
+    
+    // Copy the config file
+    if let Err(e) = copy_resource(app, &config_source, &paths.config_path).await {
+        return Err(format!("Failed to copy config file: {}", e));
+    }
+    
+    // Copy the search script
+    copy_resource(app, &search_path, &paths.search_path).await
 }
 
 #[tauri::command]
 pub async fn initialize_environment(app: AppHandle) {
     let paths = EnvPaths::new();
 
-    setup_virtual_environment(&app, &paths).await;
-    install_dependencies(&app, &paths);
-    setup_config(&app, &paths).await;
+    if let Err(e) = setup_virtual_environment(&app, &paths).await {
+        send_to_frontend(&app, format!("Failed to setup virtual environment: {}", e), "error");
+        return;
+    }
+    
+    if let Err(e) = install_dependencies(&app, &paths).await {
+        send_to_frontend(&app, format!("Failed to install dependencies: {}", e), "error");
+        return;
+    }
+    
+    if let Err(e) = setup_config(&app, &paths).await {
+        send_to_frontend(&app, format!("Failed to setup config: {}", e), "error");
+        return;
+    }
 
-	send_to_frontend(&app, "can_fetch_list".to_string(), "can_fetch_list");
+    // Only send this if all previous steps succeeded
+    send_to_frontend(&app, "can_fetch_list".to_string(), "can_fetch_list");
 }
 
 #[tauri::command]

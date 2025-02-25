@@ -39,3 +39,4 @@ rayon = "1.8"
 num_cpus = "1.15"
 fast_image_resize = "2.7"  # Faster alternative to image::imageops
 rgb = "0.8"  # For faster color conversions
+lazy_static = "1.4.0"

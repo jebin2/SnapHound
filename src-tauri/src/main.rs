@@ -4,6 +4,7 @@
 mod utils;
 mod initialise;
 mod image_processor;
+mod search_processor;
 
 #[tokio::main]
 async fn main() {
@@ -14,7 +15,11 @@ async fn main() {
             initialise::save_config,
             utils::select_folder,
             utils::list_files,
-            utils::read_image
+            utils::read_image,
+            utils::reset_all,
+            utils::relaunch,
+            search_processor::search_data,
+            search_processor::search_cancel
         ])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");

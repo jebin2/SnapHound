@@ -4,6 +4,6 @@
 		"~/Videos/*",
 		"~/Pictures/*",
 		"~/Documents/*",
-		"~/*"
+		"~/**"
 	]
 }

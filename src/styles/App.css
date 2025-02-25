@@ -1,0 +1,40 @@
+:root {
+	--bg: #000000;
+	--text: #ffffff;
+	--accent: #1a1a1a;
+	--highlight: #4d4d4d;
+  }
+  
+  * {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: 'Segoe UI', sans-serif;
+  }
+  
+  body {
+	background: var(--bg);
+	color: var(--text);
+	min-height: 100vh;
+  }
+  
+  .container {
+	max-width: 90vw;
+	margin: 0 auto;
+	padding: 2rem;
+  }
+  
+  /* Progress Indicator */
+  .progress-bar {
+	height: 3px;
+	background: var(--highlight);
+	margin-top: 1rem;
+	position: relative;
+  }
+  
+  .progress-fill {
+	height: 100%;
+	background: var(--text);
+	width: 0%;
+	transition: width 0.3s ease;
+  }
