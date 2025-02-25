@@ -121,7 +121,7 @@ body {
 
 /* Video Search Modal */
 .modal {
-	display: none;
+	display: flex;
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -267,3 +267,14 @@ body {
     padding: 16px;
     justify-items: center; /* Aligns content to the left */
 }
+
+.status-bar {
+	position: fixed;
+	bottom: 0;
+	width: 100%;
+	background-color: #222;
+	color: white;
+	padding: 10px;
+	font-size: 14px;
+  }
+  

@@ -10,7 +10,11 @@ const SEARCH_TYPES = {
   IMAGE: "image",
   VIDEO: "video"
 };
-
+const StatusBar = memo(({ status }) => (
+  <div className="status-bar">
+    {status || "Idle..."}
+  </div>
+));
 // Memoized Media Item Component with custom comparison
 const MediaItem = memo(({ item }) => {
   const imgRef = useRef(null);
@@ -159,6 +163,7 @@ const Header = memo(({
 
 // Main App Component
 function App() {
+  const [status, setStatus] = useState("Initializing...");  // Status message state
   const [searchType, setSearchType] = useState(SEARCH_TYPES.IMAGE);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
@@ -186,6 +191,11 @@ function App() {
     
     const setupListeners = async () => {
       try {
+        // Listen for status updates from Rust
+        unlisten.push(await listen("status_update", ({ payload }) => {
+          console.log("Received status update:", payload); // Debugging log
+          setStatus(payload);
+        }));
         unlisten.push(await listen("file_path", ({ payload }) => {
           const newItems = JSON.parse(payload);
           setMediaItems(prev => [
@@ -252,6 +262,7 @@ function App() {
   const handleCloseVideoModal = useCallback(() => setVideoModalOpen(false), []);
 
   return (
+    <>
     <div className="container">
       <Header
         searchType={searchType}
@@ -284,6 +295,10 @@ function App() {
         />
       )}
     </div>
+    
+      {/* Status Bar */}
+      <StatusBar status={status} />
+      </>
   );
 }
 
