@@ -10,6 +10,7 @@ import '../../styles/Header.css';
 const Header = ({ 
   onSearchInputChange,
   searchType, 
+  searchValue, 
   onSearchTypeChange, 
   openSettings, 
   openVideoModal 
@@ -18,6 +19,7 @@ const Header = ({
     <div className="search-box">
       <input 
         type="text" 
+        value={searchValue}
         className="search-input" 
         placeholder="Search with text or image..."
         onChange={onSearchInputChange} 

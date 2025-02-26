@@ -15,6 +15,7 @@ use crate::initialise::fetch_config;
 use crate::image_processor::process_thumbnail;
 
 pub fn send_to_frontend(app_handle: &AppHandle, message: String, event_type: &str) {
+    println!("{}", message);
     app_handle.emit(event_type, message).unwrap();
 }
 
@@ -28,91 +29,70 @@ pub async fn select_folder() -> String {
     }
 }
 
-#[tauri::command]
-pub async fn list_files(app: AppHandle) {
-    let config = fetch_config().await.unwrap();
-    
+pub fn expand_paths(paths: Vec<String>) -> Vec<PathBuf> {
     let mut directories = Vec::new();
 
-    if let Some(paths) = config["priority_path"].as_array() {
-        for path_value in paths {
-            if let Some(mut path_str) = path_value.as_str() {
-                let recursive = path_str.ends_with("/*");
-                if recursive {
-                    path_str = &path_str[..path_str.len() - 2];
-                }
+    for mut path_str in paths {
+        let recursive = path_str.ends_with("/*");
 
-                let expanded_path = if path_str.starts_with("~/") {
-                    dirs::home_dir()
-                        .map(|home| home.join(&path_str[2..]))
-                        .unwrap_or_else(|| PathBuf::from(path_str))
-                } else {
-                    PathBuf::from(path_str)
-                };
+        // Handle special cases for home directory
+        let expanded_path = if path_str == "~/*" {
+            // Just return home dir, we'll process the wildcard below
+            dirs::home_dir().unwrap_or_else(|| PathBuf::from("~"))
+        } else if path_str.starts_with("~/") {
+            // Trim pattern suffixes if present
+            if recursive {
+                path_str.truncate(path_str.len() - 2);
+            }
+            
+            // Expand home directory
+            dirs::home_dir()
+                .map(|home| home.join(&path_str[2..]))
+                .unwrap_or_else(|| PathBuf::from(&path_str))
+        } else {
+            // Trim pattern suffixes for non-home paths
+            if recursive {
+                path_str.truncate(path_str.len() - 2);
+            }
+            
+            PathBuf::from(&path_str)
+        };
+        
+        if expanded_path.is_dir() {
+            directories.push(expanded_path.clone());
 
-                directories.push(expanded_path);
+            // Special handling for ~/* pattern
+            if path_str == "~/*" {
+                let subdirs = list_subdirectories(&expanded_path);
+                directories.extend(subdirs);
+            } 
+            // Normal recursive handling
+            else if recursive {
+                let subdirs = list_subdirectories(&expanded_path);
+                directories.extend(subdirs);
             }
         }
     }
 
-    // Sort directories before processing
-    directories.sort();
+    directories
+}
 
-    for expanded_path in directories {
-        send_to_frontend(&app, format!("Fetching data from: {:?}", expanded_path), "status_update");
+fn list_subdirectories(base_path: &Path) -> Vec<PathBuf> {
+    let mut subdirs = Vec::new();
 
-        if expanded_path.is_dir() {
-            let mut file_paths: Vec<_> = WalkDir::new(&expanded_path)
-                .max_depth(if config["recursive"].as_bool().unwrap_or(false) { usize::MAX } else { 1 })
-                .into_iter()
-                .filter_map(|e| e.ok())
-                .filter(|entry| entry.path().is_file()) // Keep only files
-                .map(|entry| entry.path().to_path_buf()) // Extract file paths
-                .collect();
-
-            // Sort file paths before processing
-            file_paths.sort();
-
-            // Process files in parallel and send in chunks of 100
-            file_paths
-                .par_chunks(1) // Process in parallel in chunks of 100
-                .for_each(|chunk| {
-                    let files: Vec<_> = chunk
-                        .par_iter()
-                        .filter_map(|file_path| {
-                            let file_type = get_file_type(&file_path);
-                            if file_type != "unknown" {
-                                Some(json!({
-                                    "id": Uuid::new_v4().to_string(),
-                                    "path": process_thumbnail(file_path.to_str().unwrap()),
-                                    "type": file_type
-                                }))
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-
-                    if !files.is_empty() {
-                        let json_data = serde_json::to_string(&files).unwrap();
-                        send_to_frontend(&app, json_data, "file_path");
-                    }
-                });
+    if let Ok(entries) = fs::read_dir(base_path) {
+        for entry in entries.flatten() {
+            let sub_path = entry.path();
+            if sub_path.is_dir() {
+                subdirs.push(sub_path.clone());
+            }
         }
     }
+
+    subdirs
 }
 
-fn wsl_to_windows_path(path: String) -> String {
-    let output = Command::new("wslpath")
-        .arg("-w")
-        .arg(path)
-        .output()
-        .expect("Failed to execute wslpath");
-
-    String::from_utf8_lossy(&output.stdout).trim().to_string()
-}
-
-fn get_file_type(path: &Path) -> String {
+pub fn get_file_type(path: &Path) -> String {
     match path.extension().and_then(|ext| ext.to_str()) {
         Some("mp4") | Some("mkv") | Some("avi") => "video".to_string(),
         Some("jpg") | Some("jpeg") | Some("png") | Some("gif") => "image".to_string(),

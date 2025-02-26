@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
 
 // Import custom hook
@@ -20,10 +20,13 @@ import "./styles/App.css";
 function App() {
 	// State management
 	const [status, setStatus] = useState("Initializing...");
+	const [indexStatus, setIndexStatus] = useState("Indexing...");
 	const [searchType, setSearchType] = useState(SEARCH_TYPES.IMAGE);
+	const [searchValue, setSearchValue] = useState("");
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [videoModalOpen, setVideoModalOpen] = useState(false);
 	const [infoModalOpen, setInfoModalOpen] = useState(true);
+	const [infoModalContent, setInfoModalContent] = useState("Initialising setup...");
 	const [mediaItems, setMediaItems] = useState([]);
 	const [searchPaths, setSearchPaths] = useState([]);
 
@@ -43,14 +46,18 @@ function App() {
 			try {
 				// Listen for status updates from Rust
 				unlisten.push(await listen("status_update", ({ payload }) => {
-					console.log("Received status update:", payload);
 					setStatus(payload);
+				}));
+				unlisten.push(await listen("index_status", ({ payload }) => {
+					setIndexStatus(payload);
 				}));
 
 				// Listen for new file paths
 				unlisten.push(await listen("file_path", ({ payload }) => {
-					const newItems = JSON.parse(payload);
-					setMediaItems(prev => deduplicateMediaItems(prev, newItems));
+					if (!searchValueRef.current) {
+						const newItems = JSON.parse(payload);
+						setMediaItems(prev => deduplicateMediaItems(prev, newItems));
+					}
 				}));
 
 				// Listen for end of file paths
@@ -60,12 +67,29 @@ function App() {
 
 				// Listen for fetch list trigger
 				unlisten.push(await listen("can_fetch_list", () => {
-					handleCloseInfoModal();
-					invokeAPI("list_files");
+					if (!searchValueRef.current) {
+						handleCloseInfoModal();
+						invokeAPI("list_files");
+					}
 				}));
 
 				unlisten.push(await listen("success_reset", () => {
-					invokeAPI("relaunch");
+					setInfoModalContent("App will restart.");
+					setInfoModalOpen(true);
+					setTimeout(() => {
+						// invokeAPI("relaunch");
+						location.reload();
+					}, 1000);
+				}));
+
+				unlisten.push(await listen("searched_result", ({ payload }) => {
+					if (searchValueRef.current) {
+						const newItems = JSON.parse(payload);
+						setMediaItems(prev => deduplicateMediaItems(prev, newItems));
+					}
+				}));
+				unlisten.push(await listen("remove_all_data", () => {
+					setMediaItems([]);
 				}));
 			} catch (error) {
 				console.error("Error setting up listeners:", error);
@@ -82,7 +106,7 @@ function App() {
 	const fetchConfig = useCallback(async () => {
 		try {
 			const config = await invokeAPI("fetch_config");
-			setSearchPaths(config?.priority_path || []);
+			setSearchPaths(config?.priority_paths || []);
 			setSettingsOpen(true);
 		} catch (error) {
 			console.error("Failed to fetch config:", error);
@@ -119,22 +143,40 @@ function App() {
 		setSearchType(type);
 	}, []);
 
-	const onSearchInputChange = useCallback((event) => {
-		let value = event.target.value
-
-		if (!value) return; // If search is empty, do nothing
-
+	const onSearchInputChange = useCallback(async (event) => {
+		let value = event.target.value;
+		setSearchValue(value);
+	
+		if (!value || value.length <= 2) {
+			// Clear any existing timeout before setting a new one
+			if (window.searchTimeout) {
+				clearTimeout(window.searchTimeout);
+			}
+	
+			// Wait for user to stop typing, then call list_files
+			window.searchTimeout = setTimeout(async () => {
+				invokeAPI("list_files");
+			}, 500); // Adjust delay as needed
+	
+			return;
+		}
+	
 		// Clear previous timeout if user types again
 		if (window.searchTimeout) {
-			invokeAPI("search_cancel");
 			clearTimeout(window.searchTimeout);
 		}
-
+	
 		// Set a new timeout to wait before executing search
-		window.searchTimeout = setTimeout(() => {
-			invokeAPI("search_data", { searchData: value });
+		window.searchTimeout = setTimeout(async () => {
+			invokeAPI("search_indexed_data", { searchQuery: value });
 		}, 500); // Adjust delay as needed
-	}, []);
+	}, [setSearchValue, invokeAPI]);
+	const searchValueRef = useRef(searchValue);
+
+	useEffect(() => {
+		searchValueRef.current = searchValue;
+	}, [searchValue]);
+	
 
 	const handleResetAll = useCallback(async () => {
 		// Implement reset logic
@@ -154,6 +196,7 @@ function App() {
 				<Header
 					onSearchInputChange={onSearchInputChange}
 					searchType={searchType}
+					searchValue={searchValue}
 					onSearchTypeChange={handleSearchTypeChange}
 					openSettings={handleOpenSettings}
 					openVideoModal={handleOpenVideoModal}
@@ -166,7 +209,7 @@ function App() {
 				<MediaGrid mediaItems={mediaItems} />
 
 				{videoModalOpen && <VideoModal onClose={handleCloseVideoModal} />}
-				{infoModalOpen && <InfoModal />}
+				{infoModalOpen && <InfoModal infoModalContent={infoModalContent}/>}
 
 				{settingsOpen && (
 					<SettingsModal
@@ -181,7 +224,7 @@ function App() {
 			</div>
 
 			{/* Status Bar */}
-			<StatusBar status={status} />
+			<StatusBar status={status} indexStatus={indexStatus} />
 		</>
 	);
 }

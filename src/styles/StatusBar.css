@@ -1,14 +1,26 @@
-.status-bar {
+.status-container {
 	position: fixed;
 	bottom: 0;
 	width: 100%;
+	display: flex;
 	background-color: #222;
 	color: white;
-	padding: 10px;
 	font-size: 14px;
 	z-index: 999;
+  }
+  
+  .status-bar, .index-status-bar {
+	flex: 1; /* Equal width */
+	padding: 10px;
+	text-align: center;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	border-right: 1px solid #444; /* Optional separator */
+  }
+  
+  /* Remove the right border from the last element */
+  .index-status-bar {
+	border-right: none;
   }
   

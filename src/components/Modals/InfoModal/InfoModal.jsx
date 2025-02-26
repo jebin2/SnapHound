@@ -4,10 +4,10 @@ import '../../../styles/Modals.css';
 /**
  * Settings modal for managing search paths
  */
-const InfoModal = ({data}) => (
+const InfoModal = ({infoModalContent}) => (
   <div className="modal">
 	<div className="modal-content">
-		Initialising setup...
+		{infoModalContent}
 	</div>
   </div>
 );

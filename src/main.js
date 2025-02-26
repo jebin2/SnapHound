@@ -55,7 +55,7 @@ document.querySelector('[data-type="video"]').addEventListener('click', () => {
 settingIcon.addEventListener('click', async () => {
     settingsModal.style.display = 'grid';
     const config = await invokeAPI("fetch_config");
-	populatePaths(config.priority_path);
+	populatePaths(config.priority_paths);
 });
 
 /**

@@ -7,6 +7,8 @@ use tauri::{AppHandle, Manager};
 use serde_json::Value;
 
 use crate::utils::{send_to_frontend, execute_command};
+use crate::search_processor::{start_python_process, index_data};
+
 
 const APP_TEMP_DIR: &str = "snaphound";
 const VENV_DIR: &str = "venv";
@@ -95,30 +97,39 @@ async fn install_dependencies(app: &AppHandle, paths: &EnvPaths) -> Result<(), S
         return Err("Python binary not found".to_string());
     }
 
-    let mut command = Command::new(&paths.python_binary);
-    command.args(&["-m", "pip", "install", "--force-reinstall", "git+https://github.com/jebin2/SnapHoundPy.git"]);
+    // Check if SnapHoundPy is already installed
+    let check_installed = Command::new(&paths.python_binary)
+        .args(&["-m", "pip", "show", "SnapHoundPy"])
+        .output();
 
-    // Execute the command and wait for it to complete
-    match execute_command(app, &mut command, "install_dependencies".to_string()) {
-        Ok(mut child) => {
-            // Properly wait for the child process to complete
-            match child.wait() {
-                Ok(exit_status) if exit_status.success() => {
-                    send_to_frontend(app, "Dependencies installed successfully".to_string(), "success");
-                    Ok(())
-                }
-                Ok(exit_status) => {
-                    let error_msg = format!("Installation failed with status: {}", exit_status);
-                    send_to_frontend(app, error_msg.clone(), "error");
-                    Err(error_msg)
-                }
-                Err(e) => {
-                    let error_msg = format!("Failed to wait for installation process: {}", e);
-                    send_to_frontend(app, error_msg.clone(), "error");
-                    Err(error_msg)
-                }
-            }
+    if let Ok(output) = check_installed {
+        if output.status.success() {
+            send_to_frontend(app, "SnapHoundPy is already installed".to_string(), "success");
+            return Ok(()); // Return early if it's installed
         }
+    }
+
+    // SnapHoundPy not found, proceed with installation
+    let mut command = Command::new(&paths.python_binary);
+    command.args(&["-m", "pip", "install", "git+https://github.com/jebin2/SnapHoundPy.git"]);
+
+    match execute_command(app, &mut command, "install_dependencies".to_string()) {
+        Ok(mut child) => match child.wait() {
+            Ok(exit_status) if exit_status.success() => {
+                send_to_frontend(app, "Dependencies installed successfully".to_string(), "success");
+                Ok(())
+            }
+            Ok(exit_status) => {
+                let error_msg = format!("Installation failed with status: {}", exit_status);
+                send_to_frontend(app, error_msg.clone(), "error");
+                Err(error_msg)
+            }
+            Err(e) => {
+                let error_msg = format!("Failed to wait for installation process: {}", e);
+                send_to_frontend(app, error_msg.clone(), "error");
+                Err(error_msg)
+            }
+        },
         Err(e) => {
             let error_msg = format!("Failed to start installation process: {}", e);
             send_to_frontend(app, error_msg.clone(), "error");
@@ -126,7 +137,6 @@ async fn install_dependencies(app: &AppHandle, paths: &EnvPaths) -> Result<(), S
         }
     }
 }
-
 
 async fn copy_resource(app: &AppHandle, source: &PathBuf, destination: &PathBuf) -> Result<(), String> {
     let mut command = Command::new("cp");
@@ -197,6 +207,7 @@ pub async fn initialize_environment(app: AppHandle) {
         send_to_frontend(&app, format!("Failed to setup config: {}", e), "error");
         return;
     }
+    start_python_process(app.clone()).await;
 
     // Only send this if all previous steps succeeded
     send_to_frontend(&app, "can_fetch_list".to_string(), "can_fetch_list");
@@ -216,7 +227,7 @@ pub async fn save_config(priorityPath: Vec<String>, app: AppHandle) -> Result<()
     let paths = EnvPaths::new();
 
     // Convert the Vec<String> into JSON
-    let json_data = serde_json::json!({ "priority_path": priorityPath });
+    let json_data = serde_json::json!({ "priority_paths": priorityPath });
 
     // Convert JSON to a string
     let json_string = serde_json::to_string_pretty(&json_data).map_err(|e| e.to_string())?;

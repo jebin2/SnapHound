@@ -1,9 +1,9 @@
 {
-	"priority_path": [
+	"priority_paths": [
 		"~/Downloads/*",
 		"~/Videos/*",
 		"~/Pictures/*",
 		"~/Documents/*",
-		"~/**"
+		"~/git/CaptionCreator/media/comic_x_pic"
 	]
 }
