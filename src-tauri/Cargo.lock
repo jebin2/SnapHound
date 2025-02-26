@@ -4129,6 +4129,7 @@ dependencies = [
  "futures-util",
  "image",
  "imageproc",
+ "lazy_static",
  "mozjpeg",
  "num_cpus",
  "rayon",

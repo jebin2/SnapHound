@@ -134,5 +134,6 @@ pub async fn search_indexed_data(search_query: String, app: AppHandle) {
             "search_data": search_query
         }).to_string();
         send_command_to_python(&command);
+		send_to_frontend(&app, format!("Searching for: {}", search_query), "status_update");
     }
 }
