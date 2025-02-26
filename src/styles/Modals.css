@@ -10,24 +10,33 @@
 	justify-content: center;
 	align-items: center;
 	z-index: 1000;
-  }
-  
-  .modal-content {
+	overflow: hidden;
+}
+
+.modal-content {
+	display: flex;
+	flex-direction: column;
+	/* Ensures proper layout */
+	align-items: center;
 	background: #111;
-	padding: 2rem;
+	padding: 1rem;
 	border-radius: 12px;
-	width: 600px;
 	max-width: 90vw;
+	max-height: 90vh;
 	border: 1px solid #333;
-  }
-  
-  .path-list {
+	overflow: hidden;
+	gap: 1rem;
+	/* Adds spacing between elements */
+	position: relative;
+}
+
+.path-list {
 	margin: 1.5rem 0;
 	max-height: 50vh;
 	overflow-y: auto;
-  }
-  
-  .path-item {
+}
+
+.path-item {
 	display: flex;
 	gap: 0.5rem;
 	align-items: center;
@@ -36,43 +45,43 @@
 	border: 1px solid #333;
 	border-radius: 8px;
 	margin-bottom: 0.5rem;
-  }
-  
-  .path-input {
+}
+
+.path-input {
 	flex-grow: 1;
 	background: transparent;
 	border: none;
 	color: #fff;
 	padding: 0.5rem;
 	font-family: monospace;
-  }
-  
-  .path-input:focus {
+}
+
+.path-input:focus {
 	outline: none;
 	background: rgba(255, 255, 255, 0.05);
-  }
-  
-  .remove-path {
+}
+
+.remove-path {
 	background: none;
 	border: none;
 	color: #ff5555;
 	cursor: pointer;
 	padding: 0.5rem;
 	border-radius: 4px;
-  }
-  
-  .remove-path:hover {
+}
+
+.remove-path:hover {
 	background: rgba(255, 85, 85, 0.1);
-  }
-  
-  .modal-actions {
+}
+
+.modal-actions {
 	display: flex;
 	gap: 1rem;
 	justify-content: flex-end;
 	margin-top: 1.5rem;
-  }
-  
-  .add-path-btn {
+}
+
+.add-path-btn {
 	width: 100%;
 	padding: 1rem;
 	background: #222;
@@ -81,13 +90,13 @@
 	border-radius: 8px;
 	cursor: pointer;
 	margin-top: 1rem;
-  }
-  
-  .add-path-btn:hover {
+}
+
+.add-path-btn:hover {
 	background: #333;
-  }
-  
-  .close-modal {
+}
+
+.close-modal {
 	background: #333;
 	color: white;
 	border: none;
@@ -95,9 +104,9 @@
 	border-radius: 4px;
 	margin-top: 1rem;
 	cursor: pointer;
-  }
-  
-  .start-analysis {
+}
+
+.start-analysis {
 	background: #3498db;
 	color: white;
 	border: none;
@@ -106,4 +115,15 @@
 	margin-top: 1rem;
 	margin-right: 1rem;
 	cursor: pointer;
-  }
+}
+
+.view-image {
+	max-width: 100%;
+	max-height: 80vh;
+	/* Keeps image within the viewport */
+	width: auto;
+	height: auto;
+	object-fit: contain;
+	display: block;
+	margin: auto;
+}

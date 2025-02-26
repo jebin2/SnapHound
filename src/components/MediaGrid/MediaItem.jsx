@@ -6,7 +6,7 @@ import '../../styles/MediaGrid.css';
 /**
  * MediaItem component with lazy loading
  */
-const MediaItem = ({ item }) => {
+const MediaItem = ({ item, onImageClick }) => {
   const imgRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -31,7 +31,7 @@ const MediaItem = ({ item }) => {
   }
 
   return (
-    <div className="media-item" ref={imgRef}>
+    <div className="media-item" ref={imgRef} onClick={() => onImageClick(item)}> {/* Corrected: Pass item to onImageClick */}
       {item.type === "video" && <div className="video-indicator">▶</div>}
       {imgSrc && (
         <img

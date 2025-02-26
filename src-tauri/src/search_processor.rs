@@ -30,6 +30,7 @@ fn handle_process_output(reader: impl BufRead, app: &AppHandle, event_type: &str
                         .filter(|file_path| sent_results.insert(file_path.to_string())) // Ignore duplicates
 						.map(|file_path| json!({
 							"id": Uuid::new_v4().to_string(),
+							"file_path": file_path,
 							"path": process_thumbnail(file_path),
 							"type": "image"
 						}))

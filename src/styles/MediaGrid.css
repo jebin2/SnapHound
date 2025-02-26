@@ -25,6 +25,7 @@
 	transform: translateY(-5px);
   }
   
+  .view-image,
   .media-item img {
 	width: 100%;
 	height: 100%;

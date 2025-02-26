@@ -6,7 +6,7 @@
 	"build": {
 		"devUrl": "http://localhost:5173",
 		"beforeBuildCommand": "node build_setup.js",
-		"frontendDist": "../src"
+		"frontendDist": "../dist"
 	},
 	"app": {
 		"withGlobalTauri": true,
@@ -28,7 +28,8 @@
 				"enable": true,
 				"scope": [
 					"$HOME/**",
-					"/tmp/snaphound/**"
+					"/tmp/snaphound/**",
+					"/**"
 				]
 			}
 		}

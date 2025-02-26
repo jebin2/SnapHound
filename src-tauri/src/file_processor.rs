@@ -107,6 +107,7 @@ pub async fn list_files(app: AppHandle) {
                             SENT_FILES.insert(file_str.clone());
                             Some(json!({
                                 "id": Uuid::new_v4().to_string(),
+                                "file_path": file_path,
                                 "path": crate::image_processor::process_thumbnail(file_path.to_str().unwrap()),
                                 "type": file_type
                             }))
