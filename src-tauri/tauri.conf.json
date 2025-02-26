@@ -19,7 +19,8 @@
 				"theme": "Dark",
 				"decorations": true,
 				"transparent": true,
-				"center": true
+				"center": true,
+				"devtools": true
 			}
 		],
 		"security": {

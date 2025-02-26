@@ -22,14 +22,7 @@ lazy_static::lazy_static! {
 
 #[tauri::command]
 pub async fn list_files(app: AppHandle) {
-    cancel_list_files(app.clone()).await.ok();
-
     CANCEL_FLAG.store(false, Ordering::SeqCst);
-    send_to_frontend(
-        &app,
-        "File listing operation cancelled".to_string(),
-        "remove_all_data",
-    );
     let app_clone = app.clone();
     let config = crate::initialise::fetch_config().await.unwrap();
     thread::spawn(move || {
@@ -92,35 +85,66 @@ pub async fn list_files(app: AppHandle) {
                     return;
                 } // Check after traversal
                 file_paths.sort();
-                const CHUNK_SIZE: usize = 1;
-                file_paths.par_chunks(CHUNK_SIZE).for_each(|chunk| {
-                    if CANCEL_FLAG.load(Ordering::SeqCst) { return; }
                 
-                    let files: Vec<_> = chunk.par_iter().filter_map(|file_path| {
-                        let file_str = file_path.to_string_lossy().to_string();
-                        if CANCEL_FLAG.load(Ordering::SeqCst) || SENT_FILES.contains(&file_str) {
-                            return None;
+                const CHUNK_SIZE: usize = 10;
+                
+                // Process in chunks if there are enough files
+                if file_paths.len() >= CHUNK_SIZE {
+                    file_paths.par_chunks(CHUNK_SIZE).for_each(|chunk| {
+                        if CANCEL_FLAG.load(Ordering::SeqCst) { return; }
+                    
+                        let files: Vec<_> = chunk.par_iter().filter_map(|file_path| {
+                            let file_str = file_path.to_string_lossy().to_string();
+                            if CANCEL_FLAG.load(Ordering::SeqCst) || SENT_FILES.contains(&file_str) {
+                                return None;
+                            }
+                            
+                            let file_type = get_file_type(&file_path);
+                            if file_type != "unknown" {
+                                SENT_FILES.insert(file_str.clone());
+                                Some(json!({
+                                    "id": Uuid::new_v4().to_string(),
+                                    "file_path": file_path,
+                                    "path": crate::image_processor::process_thumbnail(file_path.to_str().unwrap()),
+                                    "type": file_type
+                                }))
+                            } else {
+                                None
+                            }
+                        }).collect();
+                    
+                        if !files.is_empty() && !CANCEL_FLAG.load(Ordering::SeqCst) {
+                            send_to_frontend(&app_clone, serde_json::to_string(&files).unwrap(), "file_path");
                         }
+                    });
+                } else {
+                    // Handle case where there are fewer files than CHUNK_SIZE
+                    if !file_paths.is_empty() {
+                        let files: Vec<_> = file_paths.par_iter().filter_map(|file_path| {
+                            let file_str = file_path.to_string_lossy().to_string();
+                            if CANCEL_FLAG.load(Ordering::SeqCst) || SENT_FILES.contains(&file_str) {
+                                return None;
+                            }
+                            
+                            let file_type = get_file_type(&file_path);
+                            if file_type != "unknown" {
+                                SENT_FILES.insert(file_str.clone());
+                                Some(json!({
+                                    "id": Uuid::new_v4().to_string(),
+                                    "file_path": file_path,
+                                    "path": crate::image_processor::process_thumbnail(file_path.to_str().unwrap()),
+                                    "type": file_type
+                                }))
+                            } else {
+                                None
+                            }
+                        }).collect();
                         
-                        let file_type = get_file_type(&file_path);
-                        if file_type != "unknown" {
-                            SENT_FILES.insert(file_str.clone());
-                            Some(json!({
-                                "id": Uuid::new_v4().to_string(),
-                                "file_path": file_path,
-                                "path": crate::image_processor::process_thumbnail(file_path.to_str().unwrap()),
-                                "type": file_type
-                            }))
-                        } else {
-                            None
+                        if !files.is_empty() && !CANCEL_FLAG.load(Ordering::SeqCst) {
+                            send_to_frontend(&app_clone, serde_json::to_string(&files).unwrap(), "file_path");
                         }
-                    }).collect();
-                
-                    if !files.is_empty() && !CANCEL_FLAG.load(Ordering::SeqCst) {
-                        send_to_frontend(&app_clone, serde_json::to_string(&files).unwrap(), "file_path");
                     }
-                });
-                
+                }
             }
 
             if CANCEL_FLAG.load(Ordering::SeqCst) {

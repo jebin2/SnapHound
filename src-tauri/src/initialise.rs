@@ -116,7 +116,7 @@ async fn install_dependencies(app: &AppHandle, paths: &EnvPaths) -> Result<(), S
     match execute_command(app, &mut command, "install_dependencies".to_string()) {
         Ok(mut child) => match child.wait() {
             Ok(exit_status) if exit_status.success() => {
-                send_to_frontend(app, "Dependencies installed successfully".to_string(), "success");
+                send_to_frontend(app, "Dependencies installed successfully".to_string(), "status_update");
                 Ok(())
             }
             Ok(exit_status) => {

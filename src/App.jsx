@@ -60,11 +60,6 @@ function App() {
 					}
 				}));
 
-				// Listen for end of file paths
-				unlisten.push(await listen("file_path_end", () => {
-					setMediaItems(prev => prev.length ? prev : [{ id: "empty" }]);
-				}));
-
 				// Listen for fetch list trigger
 				unlisten.push(await listen("can_fetch_list", () => {
 					if (!searchValueRef.current) {

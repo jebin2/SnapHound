@@ -32,7 +32,8 @@ fn handle_process_output(reader: impl BufRead, app: &AppHandle, event_type: &str
 							"id": Uuid::new_v4().to_string(),
 							"file_path": file_path,
 							"path": process_thumbnail(file_path),
-							"type": "image"
+							"type": "image",
+							"searched_result":true
 						}))
 						.collect();
 
@@ -41,8 +42,8 @@ fn handle_process_output(reader: impl BufRead, app: &AppHandle, event_type: &str
                     }
 				}
 			}
-		} else {
-			send_to_frontend(app, format!("{}: {}", prefix, line), event_type);
+		} else if line.contains("Starting Index process") || line.contains("Index Completed") {
+			send_to_frontend(app, format!("{}", line), event_type);
 		}
 	}
 }
